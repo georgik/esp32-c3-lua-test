@@ -32,8 +32,8 @@ jobs:
         uses: wokwi/wokwi-ci-action@v1
         with:
           token: ${{ secrets.WOKWI_CLI_TOKEN }}
-          # path: boards/${{ matrix.board }}
-          # elf: build.${{ matrix.board }}/${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin
+          path: boards/${{ matrix.board }}
+          elf: build.${{ matrix.board }}/${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin
           timeout: 30000
           expect_text: 'End of testing application.'
           fail_text: 'Error'
