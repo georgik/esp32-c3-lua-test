@@ -49,7 +49,7 @@ jobs:
           target: ${{ env.TARGET }}
           path: '.'
           command: |
-            idf.py build &&
+            idf.py -B build.${{ matrix.board }} build &&
             cd build.${{ matrix.board }} &&
             esptool.py --chip ${{ env.TARGET }} merge_bin -o ${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin "@flash_args"
 
