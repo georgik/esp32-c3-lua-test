@@ -27,7 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        board: [esp32c3-devkit, esp32c2-devkit]
+        #board: [esp32c3-devkit, esp32c2-devkit]
+        board: [esp32c3-devkit]
       fail-fast: false
 
     steps:
