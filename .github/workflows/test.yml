@@ -35,7 +35,7 @@ jobs:
           path: boards/${{ matrix.board }}
           elf: build.${{ matrix.board }}/${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin
           timeout: 30000
-          expect_text: 'Closing Lua'
+          expect_text: 'End of testing application.'
           fail_text: 'Error'
           serial_log_file: 'wokwi-logs-${{ matrix.board }}.txt'
 
