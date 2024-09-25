@@ -1,0 +1,75 @@
+name: Create GitHub Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Name of the GitHub Release'
+        required: true
+        default: 'v1.0.0'
+      release_tag:
+        description: 'Tag for the GitHub Release'
+        required: true
+        default: 'v1.0.0'
+      prefix:
+        description: 'Prefix for binary name'
+        required: true
+        default: 'esp32-c3-lua-test'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh
+
+      - name: Authenticate GitHub CLI
+        run: gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Check if Release Exists
+        id: check_release
+        run: |
+          set +e
+          gh release view ${{ github.event.inputs.release_tag }} > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "Release already exists."
+            echo "release_exists=true" >> $GITHUB_ENV
+          else
+            echo "Release does not exist."
+            echo "release_exists=false" >> $GITHUB_ENV
+          fi
+          set -e
+
+      - name: Create Release
+        if: env.release_exists == 'false'
+        run: |
+          gh release create ${{ github.event.inputs.release_tag }} --title "${{ github.event.inputs.release_name }}" --prerelease
+
+      - name: Download Build Artifacts
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: build.yml
+          path: artifacts
+
+      - name: List Downloaded Files
+        run: |
+          echo "Listing all files in the artifacts directory:"
+          find artifacts -type f
+
+      - name: Rename and Upload Assets to Release
+        run: |
+          # List all binary files in the artifacts directory
+          for file in $(find artifacts -type f -name "*.bin"); do
+            # Extract board name from the directory structure
+            board_name=$(basename "$file" | sed -n "s/${{ github.event.inputs.prefix }}-\(.*\)\.bin/\1/p")
+            # Define the versioned asset name
+            asset_name="${{ github.event.inputs.prefix }}-${{ github.event.inputs.release_tag }}-${board_name}.bin"
+            # Upload the artifact to the release
+            gh release upload "${{ github.event.inputs.release_tag }}" "$file#${asset_name}" --clobber
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

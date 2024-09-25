@@ -1,0 +1,60 @@
+name: Build ESP32 Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: 'Board to build for (all or specific board name)'
+        required: true
+        default: 'all'
+      prefix:
+        description: 'Prefix for binary name'
+        required: true
+        default: 'esp32-c3-lua-test'
+      flash_size:
+        description: 'Size of the Flash storage'
+        required: true
+        default: '4MB'
+      data_partition:
+        description: 'Name of data partition'
+        required: true
+        default: 'assets'
+
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board: [esp32c3-devkit, esp32c2-devkit]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set Target for ESP-IDF
+        run: |
+          echo "TARGET=$(case ${{ matrix.board }} in
+            esp32c3-devkit) echo 'esp32c3';;
+            esp32c3-devkit) echo 'esp32c2';;
+            *) echo 'Unknown target'; exit 1;;
+          esac)" >> $GITHUB_ENV
+
+      - name: esp-idf build and merge binaries
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: latest
+          target: ${{ env.TARGET }}
+          path: '.'
+          command: |
+            idf.py build &&
+            cd build.${{ matrix.board }} &&
+            esptool.py --chip ${{ env.TARGET }} merge_bin -o ${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin "@flash_args"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin
+          path: build.${{ matrix.board }}/${{ github.event.inputs.prefix }}-${{ matrix.board }}.bin
